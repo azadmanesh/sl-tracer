@@ -1,4 +1,4 @@
-package com.oracle.truffle.sl.tracer;
+package com.oracle.truffle.sl.tracer.tests;
 
 import static org.junit.Assert.*;
 
@@ -9,17 +9,13 @@ import java.util.Queue;
 import org.junit.Test;
 
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.SLRootNode;
-import com.oracle.truffle.sl.nodes.expression.SLAddNode;
 import com.oracle.truffle.sl.nodes.expression.SLAddNodeGen;
 import com.oracle.truffle.sl.nodes.expression.SLDivNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLMulNode;
 import com.oracle.truffle.sl.nodes.expression.SLMulNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLSubNode;
 import com.oracle.truffle.sl.nodes.expression.SLSubNodeGen;
 import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNodeGen;
+import com.oracle.truffle.sl.tracer.WrapperNode;
 
 public class NodeWrapperTest extends LanguageSetupTest {
 
@@ -159,7 +155,6 @@ public class NodeWrapperTest extends LanguageSetupTest {
                     q.add(child);
 
                 if (node.getClass() == SLMulNodeGen.class) {
-                    System.out.println("OK");
                     // The parent of an SLMULNode has to be a WrapperNode
                     assertEquals(node.getParent().getClass(), WrapperNode.class);
                 }

@@ -21,6 +21,7 @@ public class ShadowTree {
         this.delegate = delegate;
     }
 
+    @TruffleBoundary
     public static void dumpTree(ShadowTree root) {
         System.out.println("Dumping Shadow Tree:");
         dumpTree(root, 1);

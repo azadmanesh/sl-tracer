@@ -1,4 +1,4 @@
-package com.oracle.truffle.sl.tracer;
+package com.oracle.truffle.sl.tracer.tests;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,10 +27,6 @@ public class LanguageSetupTest {
     @Before
     public void setup() {
         engine = PolyglotEngine.newBuilder().setOut(out).setErr(err).build();
-    }
-
-    protected void assertEnabledInstrument(String id) {
-        Assert.assertTrue(engine.getInstruments().get(id).isEnabled());
     }
 
     protected String run(Source source) throws IOException {

@@ -86,6 +86,7 @@ import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNodeGen;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNodeGen;
+import com.oracle.truffle.sl.tracer.WrapperNode;
 
 /**
  * Helper class used by the SL {@link Parser} to create nodes. The code is factored out of the
@@ -334,16 +335,19 @@ public class SLNodeFactory {
                 result = SLLessOrEqualNodeGen.create(leftNode, rightNode);
                 break;
             case ">":
-                result = SLLogicalNotNodeGen.create(SLLessOrEqualNodeGen.create(leftNode, rightNode));
+                result = Parser.DO_TRACE ? SLLogicalNotNodeGen.create(new WrapperNode(SLLessOrEqualNodeGen.create(leftNode, rightNode)))
+                                : SLLogicalNotNodeGen.create(SLLessOrEqualNodeGen.create(leftNode, rightNode));
                 break;
             case ">=":
-                result = SLLogicalNotNodeGen.create(SLLessThanNodeGen.create(leftNode, rightNode));
+                result = Parser.DO_TRACE ? SLLogicalNotNodeGen.create(new WrapperNode(SLLessThanNodeGen.create(leftNode, rightNode)))
+                                : SLLogicalNotNodeGen.create(SLLessThanNodeGen.create(leftNode, rightNode));
                 break;
             case "==":
                 result = SLEqualNodeGen.create(leftNode, rightNode);
                 break;
             case "!=":
-                result = SLLogicalNotNodeGen.create(SLEqualNodeGen.create(leftNode, rightNode));
+                result = Parser.DO_TRACE ? SLLogicalNotNodeGen.create(new WrapperNode(SLEqualNodeGen.create(leftNode, rightNode)))
+                                : SLLogicalNotNodeGen.create(SLEqualNodeGen.create(leftNode, rightNode));
                 break;
             case "&&":
                 result = SLLogicalAndNodeGen.create(leftNode, rightNode);
@@ -359,7 +363,7 @@ public class SLNodeFactory {
         int length = rightNode.getSourceSection().getCharEndIndex() - start;
         result.setSourceSection(source.createSection(start, length));
 
-        return result;
+        return Parser.DO_TRACE ? new WrapperNode(result) : result;
     }
 
     /**
@@ -420,10 +424,10 @@ public class SLNodeFactory {
         final FrameSlot frameSlot = lexicalScope.locals.get(name);
         if (frameSlot != null) {
             /* Read of a local variable. */
-            result = SLReadLocalVariableNodeGen.create(frameSlot);
+            result = new WrapperNode(SLReadLocalVariableNodeGen.create(frameSlot));
         } else {
             /* Read of a global name. In our language, the only global names are functions. */
-            result = new SLFunctionLiteralNode(name);
+            result = new WrapperNode(new SLFunctionLiteralNode(name));
         }
         result.setSourceSection(nameNode.getSourceSection());
         return result;
@@ -456,7 +460,7 @@ public class SLNodeFactory {
     }
 
     public SLExpressionNode createParenExpression(SLExpressionNode expressionNode, int start, int length) {
-        final SLParenExpressionNode result = new SLParenExpressionNode(expressionNode);
+        final SLExpressionNode result = new WrapperNode(new SLParenExpressionNode(expressionNode));
         result.setSourceSection(source.createSection(start, length));
         return result;
     }
