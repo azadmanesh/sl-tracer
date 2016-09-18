@@ -6,17 +6,17 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.sl.nodes.SLRootNode;
-import com.oracle.truffle.sl.nodes.expression.SLAddNodeGen;
-import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNodeGen;
-import com.oracle.truffle.sl.tracer.CopyWrapperNode;
-import com.oracle.truffle.sl.tracer.WrapperNode;
+import com.oracle.truffle.sl.tracer.LocalWriterWrapperNode;
 
 /**
  * Test methods here intend to test the simple assignments in SimpleLanguage. It excludes assignment
@@ -25,7 +25,7 @@ import com.oracle.truffle.sl.tracer.WrapperNode;
  * of the current method.
  *
  */
-public class AssignmentWrapperTest extends LanguageSetupTest {
+public class LocalWriterWrapperTest extends LanguageSetupTest {
 
     @Test
     public void simpleAssignmentTest() {
@@ -51,22 +51,22 @@ public class AssignmentWrapperTest extends LanguageSetupTest {
                 if (node.getClass() == SLWriteLocalVariableNodeGen.class) {
                     count++;
                     // The parent of an SLWriteLocalVariableNodeGen has to be a WrapperNode
-                    assertEquals(node.getParent().getClass(), CopyWrapperNode.class);
+                    assertEquals(node.getParent().getClass(), LocalWriterWrapperNode.class);
                 }
             }
 
-            assertEquals("There should be only a single assignment", 4, count);
+            assertEquals("There should be 4 assignments", 4, count);
         }
     }
 
     @Test
     public void wrapperNodeValueTest() {
-        final String snippet = "function main(){" +
-                        "a = 3;" +
-                        "b = 1;" +
-                        "c = 2;" +
-                        "d = 4;" +
-                        "a = (b + c) * d;}";
+        final String snippet = " function main(){\n" +
+                        "a = 3;\n" +
+                        "b = 1;\n" +
+                        "c = 2;\n" +
+                        "d = 4;\n" +
+                        "a = (b + c) * d;}\n";
 
         Map<String, SLRootNode> map = parse(snippet);
 
@@ -90,9 +90,9 @@ public class AssignmentWrapperTest extends LanguageSetupTest {
 
                 if (node.getClass() == SLWriteLocalVariableNodeGen.class) {
                     // The parent of an SLWriteLocalVariableNodeGen has to be a WrapperNode
-                    assertEquals(node.getParent().getClass(), CopyWrapperNode.class);
+                    assertEquals(node.getParent().getClass(), LocalWriterWrapperNode.class);
 
-                    CopyWrapperNode wrapperNode = (CopyWrapperNode) node.getParent();
+                    LocalWriterWrapperNode wrapperNode = (LocalWriterWrapperNode) node.getParent();
                     assertEquals("Wrapper nodes value should be " + assignedValues[count] + " for the " + count + "th assingment", assignedValues[count],
                                     wrapperNode.getShadowSubTree().getRootValue());
                     count++;

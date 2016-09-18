@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -86,6 +87,11 @@ import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNodeGen;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNodeGen;
+import com.oracle.truffle.sl.tracer.InvokeWrapperNode;
+import com.oracle.truffle.sl.tracer.LocalReaderWrapperNode;
+import com.oracle.truffle.sl.tracer.LocalWriterWrapperNode;
+import com.oracle.truffle.sl.tracer.ReadArgumentWrapperNode;
+import com.oracle.truffle.sl.tracer.ShadowTree;
 import com.oracle.truffle.sl.tracer.WrapperNode;
 
 /**
@@ -123,6 +129,8 @@ public class SLNodeFactory {
     private int parameterCount;
     private FrameDescriptor frameDescriptor;
     private List<SLStatementNode> methodNodes;
+    // It contains mappings for the local variables' shadow values.
+    private Map<String, ShadowTree> shadowValuesMap;
 
     /* State while parsing a block. */
     private LexicalScope lexicalScope;
@@ -148,6 +156,8 @@ public class SLNodeFactory {
         functionName = nameToken.val;
         functionBodyStartPos = bodyStartPos;
         frameDescriptor = new FrameDescriptor();
+        shadowValuesMap = new HashMap<>();
+        frameDescriptor.addFrameSlot(shadowValuesMap);
         methodNodes = new ArrayList<>();
         startBlock();
     }
@@ -159,7 +169,11 @@ public class SLNodeFactory {
          * specialized.
          */
         final SLReadArgumentNode readArg = new SLReadArgumentNode(parameterCount);
-        SLExpressionNode assignment = createAssignment(createStringLiteral(nameToken, false), readArg);
+
+        // Wrap the node to find its origin in the caller's frame
+        final ReadArgumentWrapperNode readWrapperNode = new ReadArgumentWrapperNode(readArg, parameterCount);
+
+        SLExpressionNode assignment = createAssignment(createStringLiteral(nameToken, false), readWrapperNode);
         methodNodes.add(assignment);
         parameterCount++;
     }
@@ -403,7 +417,7 @@ public class SLNodeFactory {
             result.setSourceSection(source.createSection(start, length));
         }
 
-        return result;
+        return LocalWriterWrapperNode.create(result, shadowValuesMap, name);
     }
 
     /**
@@ -424,13 +438,13 @@ public class SLNodeFactory {
         final FrameSlot frameSlot = lexicalScope.locals.get(name);
         if (frameSlot != null) {
             /* Read of a local variable. */
-            result = new WrapperNode(SLReadLocalVariableNodeGen.create(frameSlot));
+            result = SLReadLocalVariableNodeGen.create(frameSlot);
         } else {
             /* Read of a global name. In our language, the only global names are functions. */
-            result = new WrapperNode(new SLFunctionLiteralNode(name));
+            result = new SLFunctionLiteralNode(name);
         }
         result.setSourceSection(nameNode.getSourceSection());
-        return result;
+        return LocalReaderWrapperNode.create(result, shadowValuesMap, name);
     }
 
     public SLExpressionNode createStringLiteral(Token literalToken, boolean removeQuotes) {
@@ -460,9 +474,9 @@ public class SLNodeFactory {
     }
 
     public SLExpressionNode createParenExpression(SLExpressionNode expressionNode, int start, int length) {
-        final SLExpressionNode result = new WrapperNode(new SLParenExpressionNode(expressionNode));
+        final SLExpressionNode result = new SLParenExpressionNode(expressionNode);
         result.setSourceSection(source.createSection(start, length));
-        return result;
+        return new WrapperNode(result);
     }
 
     /**

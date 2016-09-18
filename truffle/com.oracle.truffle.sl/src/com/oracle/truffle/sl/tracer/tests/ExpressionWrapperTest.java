@@ -17,11 +17,11 @@ import com.oracle.truffle.sl.nodes.expression.SLSubNodeGen;
 import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNodeGen;
 import com.oracle.truffle.sl.tracer.WrapperNode;
 
-public class NodeWrapperTest extends LanguageSetupTest {
+public class ExpressionWrapperTest extends LanguageSetupTest {
 
     @Test
     public void wrapAddOpTest() {
-        String snippet = "function main(){" +
+        final String snippet = "function main(){" +
                         "b = 1;" +
                         "c = 2;" +
                         "d = 3;" +

@@ -7,6 +7,9 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import com.oracle.truffle.api.source.MissingNameException;
 import com.oracle.truffle.api.source.Source;
@@ -23,6 +26,17 @@ public class LanguageSetupTest {
 
     protected final ByteArrayOutputStream out = new ByteArrayOutputStream();
     protected final ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+    /**
+     * Logs each test method's name upon execution
+     */
+    @Rule public TestWatcher testWatcher = new TestWatcher() {
+        @Override
+        protected void starting(final Description description) {
+            String methodName = description.getMethodName();
+            System.out.println("Test Method: " + methodName);
+        }
+    };
 
     @Before
     public void setup() {

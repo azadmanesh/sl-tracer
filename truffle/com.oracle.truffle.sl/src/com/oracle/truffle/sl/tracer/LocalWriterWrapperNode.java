@@ -13,20 +13,20 @@ import com.oracle.truffle.sl.nodes.SLExpressionNode;
  *
  * TODO A copy wrapper for property writes
  */
-public class CopyWrapperNode extends WrapperNode {
+public class LocalWriterWrapperNode extends WrapperNode {
 
     private final Map<String, ShadowTree> shadowValuesMap;
 
     private final String name;
 
-    private CopyWrapperNode(SLExpressionNode wrappedNode, Map<String, ShadowTree> shadowValuesMap, String name) {
+    private LocalWriterWrapperNode(SLExpressionNode wrappedNode, Map<String, ShadowTree> shadowValuesMap, String name) {
         super(wrappedNode);
         this.shadowValuesMap = shadowValuesMap;
         this.name = name;
     }
 
-    public static CopyWrapperNode copyLocalWrapper(SLExpressionNode wrappedNode, Map<String, ShadowTree> shadowValuesMap, String name) {
-        return new CopyWrapperNode(wrappedNode, shadowValuesMap, name);
+    public static LocalWriterWrapperNode create(SLExpressionNode wrappedNode, Map<String, ShadowTree> shadowValuesMap, String name) {
+        return new LocalWriterWrapperNode(wrappedNode, shadowValuesMap, name);
     }
 
     @Override

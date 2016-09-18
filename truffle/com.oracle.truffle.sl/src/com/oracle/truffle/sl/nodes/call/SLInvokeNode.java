@@ -47,6 +47,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.runtime.SLFunction;
+import com.oracle.truffle.sl.tracer.InvokeWrapperNode;
 
 /**
  * The node for function invocation in SL. Since SL has first class functions, the {@link SLFunction
@@ -65,7 +66,7 @@ public final class SLInvokeNode extends SLExpressionNode {
     public SLInvokeNode(SLExpressionNode functionNode, SLExpressionNode[] argumentNodes) {
         this.functionNode = functionNode;
         this.argumentNodes = argumentNodes;
-        this.dispatchNode = SLDispatchNodeGen.create();
+        this.dispatchNode = new InvokeWrapperNode(SLDispatchNodeGen.create(), argumentNodes);
     }
 
     @ExplodeLoop

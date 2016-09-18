@@ -8,6 +8,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 
 /**
@@ -16,12 +17,15 @@ import com.oracle.truffle.sl.nodes.SLExpressionNode;
  */
 public class WrapperNode extends SLExpressionNode {
 
-    @Child private SLExpressionNode wrappedNode;
+    @Child protected SLExpressionNode wrappedNode;
 
-    private ShadowTree shadowSubTree;
+    protected ShadowTree shadowSubTree;
 
     public WrapperNode(SLExpressionNode wrappedNode) {
         this.wrappedNode = wrappedNode;
+        // we cannot override getSourceSection method because it is final, so we set source section
+        // here to avoid NPE
+        this.setSourceSection(this.wrappedNode.getSourceSection());
     }
 
     @Override
