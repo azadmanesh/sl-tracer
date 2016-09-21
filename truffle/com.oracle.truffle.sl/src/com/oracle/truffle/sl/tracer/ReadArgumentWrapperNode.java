@@ -1,11 +1,14 @@
 package com.oracle.truffle.sl.tracer;
 
+import java.util.Stack;
+
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
+import com.oracle.truffle.sl.parser.SLNodeFactory;
 
 public class ReadArgumentWrapperNode extends WrapperNode {
 
@@ -24,13 +27,17 @@ public class ReadArgumentWrapperNode extends WrapperNode {
 
         try {
             ShadowTree[] shadowTrees = (ShadowTree[]) callerFrame.getObject(slot);
-            this.shadowSubTree = shadowTrees[this.index];
+
+            FrameSlot stackSlot = frame.getFrameDescriptor().findFrameSlot(SLNodeFactory.SHADOW_OPERAND_STACK_KEY);
+            Stack<ShadowTree> operandStack = (Stack<ShadowTree>) frame.getObject(stackSlot);
+
+            for (ShadowTree shadowTree : shadowTrees) {
+                operandStack.push(shadowTree);
+            }
+
         } catch (FrameSlotTypeException e) {
             e.printStackTrace();
         }
-
-        // Incrementally dump the tree
-        ShadowTree.dumpTree(this.shadowSubTree);
 
         return result;
     }

@@ -87,11 +87,17 @@ import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNodeGen;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNodeGen;
+import com.oracle.truffle.sl.tracer.BinaryOperatorWrapperNode;
+import com.oracle.truffle.sl.tracer.FunctionBodyWrapperNode;
 import com.oracle.truffle.sl.tracer.InvokeWrapperNode;
+import com.oracle.truffle.sl.tracer.LiteralWrapperNode;
 import com.oracle.truffle.sl.tracer.LocalReaderWrapperNode;
 import com.oracle.truffle.sl.tracer.LocalWriterWrapperNode;
+import com.oracle.truffle.sl.tracer.PropertyReaderWrapperNode;
 import com.oracle.truffle.sl.tracer.ReadArgumentWrapperNode;
+import com.oracle.truffle.sl.tracer.ReturnWrapperNode;
 import com.oracle.truffle.sl.tracer.ShadowTree;
+import com.oracle.truffle.sl.tracer.UnaryOperatorWrapperNode;
 import com.oracle.truffle.sl.tracer.WrapperNode;
 
 /**
@@ -118,6 +124,12 @@ public class SLNodeFactory {
         }
     }
 
+    // The mapping will be to a stack object holding shadow tree root
+    public final static Object SHADOW_OPERAND_STACK_KEY = new Object();
+
+    // The mapping will be to a map of each local name to the list of its occurrences.
+    public final static Object SHADOW_LOCAL_KEY = new Object();
+
     /* State while parsing a source unit. */
     private final Source source;
     private final Map<String, SLRootNode> allFunctions;
@@ -129,8 +141,6 @@ public class SLNodeFactory {
     private int parameterCount;
     private FrameDescriptor frameDescriptor;
     private List<SLStatementNode> methodNodes;
-    // It contains mappings for the local variables' shadow values.
-    private Map<String, ShadowTree> shadowValuesMap;
 
     /* State while parsing a block. */
     private LexicalScope lexicalScope;
@@ -156,8 +166,8 @@ public class SLNodeFactory {
         functionName = nameToken.val;
         functionBodyStartPos = bodyStartPos;
         frameDescriptor = new FrameDescriptor();
-        shadowValuesMap = new HashMap<>();
-        frameDescriptor.addFrameSlot(shadowValuesMap);
+        frameDescriptor.addFrameSlot(SHADOW_LOCAL_KEY);
+        frameDescriptor.addFrameSlot(SHADOW_OPERAND_STACK_KEY);
         methodNodes = new ArrayList<>();
         startBlock();
     }
@@ -187,7 +197,7 @@ public class SLNodeFactory {
 
         final SLFunctionBodyNode functionBodyNode = new SLFunctionBodyNode(methodBlock);
         functionBodyNode.setSourceSection(functionSrc);
-        final SLRootNode rootNode = new SLRootNode(frameDescriptor, functionBodyNode, functionSrc, functionName);
+        final SLRootNode rootNode = new SLRootNode(frameDescriptor, new FunctionBodyWrapperNode(functionBodyNode), functionSrc, functionName);
         allFunctions.put(functionName, rootNode);
 
         functionStartPos = 0;
@@ -315,7 +325,7 @@ public class SLNodeFactory {
         final int length = valueNode == null ? t.val.length() : valueNode.getSourceSection().getCharEndIndex() - start;
         final SLReturnNode returnNode = new SLReturnNode(valueNode);
         returnNode.setSourceSection(source.createSection(start, length));
-        return returnNode;
+        return new ReturnWrapperNode(returnNode);
     }
 
     /**
@@ -349,19 +359,16 @@ public class SLNodeFactory {
                 result = SLLessOrEqualNodeGen.create(leftNode, rightNode);
                 break;
             case ">":
-                result = Parser.DO_TRACE ? SLLogicalNotNodeGen.create(new WrapperNode(SLLessOrEqualNodeGen.create(leftNode, rightNode)))
-                                : SLLogicalNotNodeGen.create(SLLessOrEqualNodeGen.create(leftNode, rightNode));
+                result = SLLogicalNotNodeGen.create(new BinaryOperatorWrapperNode(SLLessOrEqualNodeGen.create(leftNode, rightNode)));
                 break;
             case ">=":
-                result = Parser.DO_TRACE ? SLLogicalNotNodeGen.create(new WrapperNode(SLLessThanNodeGen.create(leftNode, rightNode)))
-                                : SLLogicalNotNodeGen.create(SLLessThanNodeGen.create(leftNode, rightNode));
+                result = SLLogicalNotNodeGen.create(new BinaryOperatorWrapperNode(SLLessThanNodeGen.create(leftNode, rightNode)));
                 break;
             case "==":
                 result = SLEqualNodeGen.create(leftNode, rightNode);
                 break;
             case "!=":
-                result = Parser.DO_TRACE ? SLLogicalNotNodeGen.create(new WrapperNode(SLEqualNodeGen.create(leftNode, rightNode)))
-                                : SLLogicalNotNodeGen.create(SLEqualNodeGen.create(leftNode, rightNode));
+                result = SLLogicalNotNodeGen.create(new BinaryOperatorWrapperNode(SLEqualNodeGen.create(leftNode, rightNode)));
                 break;
             case "&&":
                 result = SLLogicalAndNodeGen.create(leftNode, rightNode);
@@ -377,7 +384,7 @@ public class SLNodeFactory {
         int length = rightNode.getSourceSection().getCharEndIndex() - start;
         result.setSourceSection(source.createSection(start, length));
 
-        return Parser.DO_TRACE ? new WrapperNode(result) : result;
+        return result instanceof SLLogicalNotNodeGen ? new UnaryOperatorWrapperNode(result) : new BinaryOperatorWrapperNode(result);
     }
 
     /**
@@ -417,7 +424,7 @@ public class SLNodeFactory {
             result.setSourceSection(source.createSection(start, length));
         }
 
-        return LocalWriterWrapperNode.create(result, shadowValuesMap, name);
+        return LocalWriterWrapperNode.create(result, name);
     }
 
     /**
@@ -444,7 +451,7 @@ public class SLNodeFactory {
             result = new SLFunctionLiteralNode(name);
         }
         result.setSourceSection(nameNode.getSourceSection());
-        return LocalReaderWrapperNode.create(result, shadowValuesMap, name);
+        return LocalReaderWrapperNode.create(result, name);
     }
 
     public SLExpressionNode createStringLiteral(Token literalToken, boolean removeQuotes) {
@@ -470,13 +477,13 @@ public class SLNodeFactory {
             result = new SLBigIntegerLiteralNode(new BigInteger(literalToken.val));
         }
         srcFromToken(result, literalToken);
-        return result;
+        return new LiteralWrapperNode(result);
     }
 
     public SLExpressionNode createParenExpression(SLExpressionNode expressionNode, int start, int length) {
         final SLExpressionNode result = new SLParenExpressionNode(expressionNode);
         result.setSourceSection(source.createSection(start, length));
-        return new WrapperNode(result);
+        return new UnaryOperatorWrapperNode(result);
     }
 
     /**
@@ -493,7 +500,7 @@ public class SLNodeFactory {
         final int endPos = nameNode.getSourceSection().getCharEndIndex();
         result.setSourceSection(source.createSection(startPos, endPos - startPos));
 
-        return result;
+        return new PropertyReaderWrapperNode(result);
     }
 
     /**
