@@ -45,13 +45,14 @@ public class ReturnWrapperNode extends SLStatementNode {
                         throw new IllegalStateException("Operand stack's size should be at least 1!");
 
                     ShadowTree origin = operandStack.pop();
+                    ShadowTree newShadowTree = new ShadowTree(this.wrappedNode, origin.getRootValue(), new ShadowTree[]{origin});
                     VirtualFrame callerFrame = (VirtualFrame) Truffle.getRuntime().getCallerFrame().getFrame(FrameAccess.READ_ONLY, true);
                     FrameSlot callerStackSlot = callerFrame.getFrameDescriptor().findFrameSlot(SLNodeFactory.SHADOW_OPERAND_STACK_KEY);
                     Stack<ShadowTree> callerStack = (Stack<ShadowTree>) callerFrame.getObject(callerStackSlot);
-                    callerStack.push(origin);
+                    callerStack.push(newShadowTree);
                 }
             } catch (FrameSlotTypeException fste) {
-                e.printStackTrace();
+                throw new IllegalStateException(fste);
             }
 
             result = e;

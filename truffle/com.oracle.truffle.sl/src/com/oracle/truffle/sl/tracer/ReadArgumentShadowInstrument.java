@@ -10,36 +10,35 @@ import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.parser.SLNodeFactory;
 
-public class ReadArgumentWrapperNode extends WrapperNode {
+/**
+ * A read argument looks up for its origin in the operand stack of the caller's frame and pushes the
+ * result on top of the operand stack of the current frame.
+ *
+ */
+public class ReadArgumentShadowInstrument implements ShadowGeneratorInstrument {
 
     private final int index;
 
-    public ReadArgumentWrapperNode(SLExpressionNode wrappedNode, int index) {
-        super(wrappedNode);
+    public ReadArgumentShadowInstrument(int index) {
         this.index = index;
     }
 
-    @Override
-    public Object executeGeneric(VirtualFrame frame) {
-        Object result = wrappedNode.executeGeneric(frame);
+    public void beforeExecuteGeneric(VirtualFrame frame) {
+    }
+
+    public ShadowTree afterExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode, Object result) {
         VirtualFrame callerFrame = (VirtualFrame) Truffle.getRuntime().getCallerFrame().getFrame(FrameAccess.READ_ONLY, true);
         FrameSlot slot = callerFrame.getFrameDescriptor().findFrameSlot(callerFrame);
 
+        ShadowTree argumentShadowTree = null;
+
         try {
             ShadowTree[] shadowTrees = (ShadowTree[]) callerFrame.getObject(slot);
-
-            FrameSlot stackSlot = frame.getFrameDescriptor().findFrameSlot(SLNodeFactory.SHADOW_OPERAND_STACK_KEY);
-            Stack<ShadowTree> operandStack = (Stack<ShadowTree>) frame.getObject(stackSlot);
-
-            for (ShadowTree shadowTree : shadowTrees) {
-                operandStack.push(shadowTree);
-            }
-
+            argumentShadowTree = shadowTrees[index];
         } catch (FrameSlotTypeException e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         }
-
-        return result;
+        return argumentShadowTree;
     }
 
 }

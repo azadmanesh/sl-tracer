@@ -87,18 +87,16 @@ import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNodeGen;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNode;
 import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNodeGen;
-import com.oracle.truffle.sl.tracer.BinaryOperatorWrapperNode;
-import com.oracle.truffle.sl.tracer.FunctionBodyWrapperNode;
-import com.oracle.truffle.sl.tracer.InvokeWrapperNode;
-import com.oracle.truffle.sl.tracer.LiteralWrapperNode;
-import com.oracle.truffle.sl.tracer.LocalReaderWrapperNode;
-import com.oracle.truffle.sl.tracer.LocalWriterWrapperNode;
-import com.oracle.truffle.sl.tracer.PropertyReaderWrapperNode;
-import com.oracle.truffle.sl.tracer.ReadArgumentWrapperNode;
+import com.oracle.truffle.sl.tracer.FunctionBodyShadowInstrument;
+import com.oracle.truffle.sl.tracer.LiteralShadowInstrument;
+import com.oracle.truffle.sl.tracer.ReadArgumentShadowInstrument;
+import com.oracle.truffle.sl.tracer.ReadLocalShadowInstrument;
+import com.oracle.truffle.sl.tracer.ReadPropertyShadowInstrument;
 import com.oracle.truffle.sl.tracer.ReturnWrapperNode;
-import com.oracle.truffle.sl.tracer.ShadowTree;
-import com.oracle.truffle.sl.tracer.UnaryOperatorWrapperNode;
-import com.oracle.truffle.sl.tracer.WrapperNode;
+import com.oracle.truffle.sl.tracer.StackManipulateShadowInstrument;
+import com.oracle.truffle.sl.tracer.WriteLocalShadowInstrument;
+import com.oracle.truffle.sl.tracer.ExpressionWrapperNode;
+import com.oracle.truffle.sl.tracer.WritePropertyShadowInstrument;
 
 /**
  * Helper class used by the SL {@link Parser} to create nodes. The code is factored out of the
@@ -181,7 +179,7 @@ public class SLNodeFactory {
         final SLReadArgumentNode readArg = new SLReadArgumentNode(parameterCount);
 
         // Wrap the node to find its origin in the caller's frame
-        final ReadArgumentWrapperNode readWrapperNode = new ReadArgumentWrapperNode(readArg, parameterCount);
+        final ExpressionWrapperNode readWrapperNode = new ExpressionWrapperNode(readArg, new ReadArgumentShadowInstrument(parameterCount));
 
         SLExpressionNode assignment = createAssignment(createStringLiteral(nameToken, false), readWrapperNode);
         methodNodes.add(assignment);
@@ -197,7 +195,7 @@ public class SLNodeFactory {
 
         final SLFunctionBodyNode functionBodyNode = new SLFunctionBodyNode(methodBlock);
         functionBodyNode.setSourceSection(functionSrc);
-        final SLRootNode rootNode = new SLRootNode(frameDescriptor, new FunctionBodyWrapperNode(functionBodyNode), functionSrc, functionName);
+        final SLRootNode rootNode = new SLRootNode(frameDescriptor, new ExpressionWrapperNode(functionBodyNode, new FunctionBodyShadowInstrument()), functionSrc, functionName);
         allFunctions.put(functionName, rootNode);
 
         functionStartPos = 0;
@@ -359,16 +357,16 @@ public class SLNodeFactory {
                 result = SLLessOrEqualNodeGen.create(leftNode, rightNode);
                 break;
             case ">":
-                result = SLLogicalNotNodeGen.create(new BinaryOperatorWrapperNode(SLLessOrEqualNodeGen.create(leftNode, rightNode)));
+                result = SLLogicalNotNodeGen.create(new ExpressionWrapperNode(SLLessOrEqualNodeGen.create(leftNode, rightNode), new StackManipulateShadowInstrument()));
                 break;
             case ">=":
-                result = SLLogicalNotNodeGen.create(new BinaryOperatorWrapperNode(SLLessThanNodeGen.create(leftNode, rightNode)));
+                result = SLLogicalNotNodeGen.create(new ExpressionWrapperNode(SLLessThanNodeGen.create(leftNode, rightNode), new StackManipulateShadowInstrument()));
                 break;
             case "==":
                 result = SLEqualNodeGen.create(leftNode, rightNode);
                 break;
             case "!=":
-                result = SLLogicalNotNodeGen.create(new BinaryOperatorWrapperNode(SLEqualNodeGen.create(leftNode, rightNode)));
+                result = SLLogicalNotNodeGen.create(new ExpressionWrapperNode(SLEqualNodeGen.create(leftNode, rightNode), new StackManipulateShadowInstrument()));
                 break;
             case "&&":
                 result = SLLogicalAndNodeGen.create(leftNode, rightNode);
@@ -384,7 +382,7 @@ public class SLNodeFactory {
         int length = rightNode.getSourceSection().getCharEndIndex() - start;
         result.setSourceSection(source.createSection(start, length));
 
-        return result instanceof SLLogicalNotNodeGen ? new UnaryOperatorWrapperNode(result) : new BinaryOperatorWrapperNode(result);
+        return new ExpressionWrapperNode(result, new StackManipulateShadowInstrument());
     }
 
     /**
@@ -396,6 +394,8 @@ public class SLNodeFactory {
      * @return An SLInvokeNode for the given parameters.
      */
     public SLExpressionNode createCall(SLExpressionNode functionNode, List<SLExpressionNode> parameterNodes, Token finalToken) {
+        System.out.println("function node is " + functionNode);
+        System.out.println("parameter Nodes is " + parameterNodes);
         final SLExpressionNode result = new SLInvokeNode(functionNode, parameterNodes.toArray(new SLExpressionNode[parameterNodes.size()]));
 
         final int startPos = functionNode.getSourceSection().getCharIndex();
@@ -413,7 +413,7 @@ public class SLNodeFactory {
      * @return An SLExpressionNode for the given parameters.
      */
     public SLExpressionNode createAssignment(SLExpressionNode nameNode, SLExpressionNode valueNode) {
-        String name = ((SLStringLiteralNode) nameNode).executeGeneric(null);
+        String name = (String) nameNode.executeGeneric(null);
         FrameSlot frameSlot = frameDescriptor.findOrAddFrameSlot(name);
         lexicalScope.locals.put(name, frameSlot);
         final SLExpressionNode result = SLWriteLocalVariableNodeGen.create(valueNode, frameSlot);
@@ -424,7 +424,7 @@ public class SLNodeFactory {
             result.setSourceSection(source.createSection(start, length));
         }
 
-        return LocalWriterWrapperNode.create(result, name);
+        return new ExpressionWrapperNode(result, new WriteLocalShadowInstrument(name));
     }
 
     /**
@@ -440,7 +440,7 @@ public class SLNodeFactory {
      *         </ul>
      */
     public SLExpressionNode createRead(SLExpressionNode nameNode) {
-        String name = ((SLStringLiteralNode) nameNode).executeGeneric(null);
+        String name = (String) nameNode.executeGeneric(null);
         final SLExpressionNode result;
         final FrameSlot frameSlot = lexicalScope.locals.get(name);
         if (frameSlot != null) {
@@ -451,7 +451,7 @@ public class SLNodeFactory {
             result = new SLFunctionLiteralNode(name);
         }
         result.setSourceSection(nameNode.getSourceSection());
-        return LocalReaderWrapperNode.create(result, name);
+        return new ExpressionWrapperNode(result, new ReadLocalShadowInstrument(name));
     }
 
     public SLExpressionNode createStringLiteral(Token literalToken, boolean removeQuotes) {
@@ -464,7 +464,7 @@ public class SLNodeFactory {
 
         final SLStringLiteralNode result = new SLStringLiteralNode(literal.intern());
         srcFromToken(result, literalToken);
-        return result;
+        return new ExpressionWrapperNode(result, new LiteralShadowInstrument());
     }
 
     public SLExpressionNode createNumericLiteral(Token literalToken) {
@@ -477,13 +477,13 @@ public class SLNodeFactory {
             result = new SLBigIntegerLiteralNode(new BigInteger(literalToken.val));
         }
         srcFromToken(result, literalToken);
-        return new LiteralWrapperNode(result);
+        return new ExpressionWrapperNode(result, new LiteralShadowInstrument());
     }
 
     public SLExpressionNode createParenExpression(SLExpressionNode expressionNode, int start, int length) {
         final SLExpressionNode result = new SLParenExpressionNode(expressionNode);
         result.setSourceSection(source.createSection(start, length));
-        return new UnaryOperatorWrapperNode(result);
+        return new ExpressionWrapperNode(result, new LiteralShadowInstrument());
     }
 
     /**
@@ -500,7 +500,7 @@ public class SLNodeFactory {
         final int endPos = nameNode.getSourceSection().getCharEndIndex();
         result.setSourceSection(source.createSection(startPos, endPos - startPos));
 
-        return new PropertyReaderWrapperNode(result);
+        return new ExpressionWrapperNode(result, new ReadPropertyShadowInstrument());
     }
 
     /**
@@ -518,7 +518,7 @@ public class SLNodeFactory {
         final int length = valueNode.getSourceSection().getCharEndIndex() - start;
         result.setSourceSection(source.createSection(start, length));
 
-        return result;
+        return new ExpressionWrapperNode(result, new WritePropertyShadowInstrument());
     }
 
     /**

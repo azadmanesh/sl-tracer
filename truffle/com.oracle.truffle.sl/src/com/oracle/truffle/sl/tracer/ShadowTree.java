@@ -30,11 +30,17 @@ public class ShadowTree {
 
     @TruffleBoundary
     private static void dumpTree(ShadowTree root, int level) {
-        if (root.astNode.getSourceSection() != null) {      // source section can be null, e.g.:
-                                                            // formal parameter passing
-            pad(level);
-            System.out.println("Node:\t" + root.astNode.getClass().getSimpleName() + ", Line:\t" + root.astNode.getSourceSection().getStartLine() + ", Value:\t" + root.value);
+        String lineNo = "";
+
+        // source section can be null, e.g.: formal parameter passing
+        if (root.astNode.getSourceSection() != null) {
+            lineNo += root.astNode.getSourceSection().getStartLine();
+        } else {
+            lineNo += "<UNKNOWN>";
         }
+
+        pad(level);
+        System.out.println("Node:\t" + root.astNode.getClass().getSimpleName() + ", Line:\t" + lineNo + ", Value:\t" + root.value);
 
         for (ShadowTree child : root.children) {
             dumpTree(child, level + 1);

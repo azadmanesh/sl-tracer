@@ -15,7 +15,7 @@ import com.oracle.truffle.sl.nodes.expression.SLDivNodeGen;
 import com.oracle.truffle.sl.nodes.expression.SLMulNodeGen;
 import com.oracle.truffle.sl.nodes.expression.SLSubNodeGen;
 import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNodeGen;
-import com.oracle.truffle.sl.tracer.WrapperNode;
+import com.oracle.truffle.sl.tracer.ExpressionWrapperNode;
 
 public class ExpressionWrapperTest extends LanguageSetupTest {
 
@@ -41,7 +41,7 @@ public class ExpressionWrapperTest extends LanguageSetupTest {
 
                 if (node.getClass() == SLAddNodeGen.class) {
                     // The parent of an SLAddNode has to be a WrapperNode
-                    assertEquals(node.getParent().getClass(), WrapperNode.class);
+                    assertEquals(node.getParent().getClass(), ExpressionWrapperNode.class);
                 }
             }
         }
@@ -70,7 +70,7 @@ public class ExpressionWrapperTest extends LanguageSetupTest {
 
                 if (node.getClass() == SLReadLocalVariableNodeGen.class) {
                     // The parent of an SLReadLocalVariableNodeGen has to be a WrapperNode
-                    assertEquals(node.getParent().getClass(), WrapperNode.class);
+                    assertEquals(node.getParent().getClass(), ExpressionWrapperNode.class);
                 }
             }
         }
@@ -99,7 +99,7 @@ public class ExpressionWrapperTest extends LanguageSetupTest {
 
                 if (node.getClass() == SLSubNodeGen.class) {
                     // The parent of an SLSubNode has to be a WrapperNode
-                    assertEquals(node.getParent().getClass(), WrapperNode.class);
+                    assertEquals(node.getParent().getClass(), ExpressionWrapperNode.class);
                 }
             }
         }
@@ -128,7 +128,7 @@ public class ExpressionWrapperTest extends LanguageSetupTest {
 
                 if (node.getClass() == SLDivNodeGen.class) {
                     // The parent of an SLDivNode has to be a WrapperNode
-                    assertEquals(node.getParent().getClass(), WrapperNode.class);
+                    assertEquals(node.getParent().getClass(), ExpressionWrapperNode.class);
                 }
             }
         }
@@ -156,7 +156,7 @@ public class ExpressionWrapperTest extends LanguageSetupTest {
 
                 if (node.getClass() == SLMulNodeGen.class) {
                     // The parent of an SLMULNode has to be a WrapperNode
-                    assertEquals(node.getParent().getClass(), WrapperNode.class);
+                    assertEquals(node.getParent().getClass(), ExpressionWrapperNode.class);
                 }
             }
         }

@@ -9,8 +9,16 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.call.SLDispatchNode;
 import com.oracle.truffle.sl.nodes.call.SLInvokeNode;
+import com.oracle.truffle.sl.parser.Parser;
 import com.oracle.truffle.sl.parser.SLNodeFactory;
 
+/**
+ * We instrument DispatchNode because 1) this is the point where the argument nodes are already
+ * evaluated, 2) It is before passing the control to the callee. If we wrap SLInvokeNode, calling
+ * its executeGeneric method ends up with executing the body of the callee, so we cannot intercept
+ * the invocation and pass the arguments before executing the body of the callee.
+ *
+ */
 public class InvokeWrapperNode extends SLDispatchNode {
 
     @Children private final SLExpressionNode[] argumentNodes;
@@ -23,18 +31,22 @@ public class InvokeWrapperNode extends SLDispatchNode {
 
     @Override
     public Object executeDispatch(VirtualFrame frame, Object function, Object[] arguments) {
+        if (!Parser.DO_TRACE)
+            return this.wrappedNode.executeDispatch(frame, function, arguments);
+
         // find the shadow sub tree corresponding to each argument from the operand stack
         FrameSlot stackSlot = frame.getFrameDescriptor().findFrameSlot(SLNodeFactory.SHADOW_OPERAND_STACK_KEY);
 
         try {
             Stack<ShadowTree> operandStack = (Stack<ShadowTree>) frame.getObject(stackSlot);
+            final int argumentsCount = arguments.length;
 
-            if (operandStack.size() < arguments.length)
-                throw new IllegalStateException("Operand stack's size should be at least " + arguments.length);
+            if (operandStack.size() < argumentsCount)
+                throw new IllegalStateException("Operand stack's size should be at least " + argumentsCount);
 
-            ShadowTree[] shadowTree = new ShadowTree[arguments.length];
-            for (int i = 0; i < shadowTree.length; i++) {
-                shadowTree[i] = operandStack.pop();
+            ShadowTree[] shadowTree = new ShadowTree[argumentsCount];
+            for (int i = 0; i < argumentsCount; i++) {
+                shadowTree[argumentsCount - i - 1] = operandStack.pop();
             }
 
             // We pass the argument shadow trees through the frame. In order for the callee to find
