@@ -31,9 +31,6 @@ public class InvokeWrapperNode extends SLDispatchNode {
 
     @Override
     public Object executeDispatch(VirtualFrame frame, Object function, Object[] arguments) {
-        if (!Parser.DO_TRACE)
-            return this.wrappedNode.executeDispatch(frame, function, arguments);
-
         // find the shadow sub tree corresponding to each argument from the operand stack
         FrameSlot stackSlot = frame.getFrameDescriptor().findFrameSlot(SLNodeFactory.SHADOW_OPERAND_STACK_KEY);
 

@@ -40,9 +40,6 @@ public class ExpressionWrapperNode extends SLExpressionNode {
     @Override
     @SuppressWarnings("unchecked")
     public Object executeGeneric(VirtualFrame frame) {
-        if (!Parser.DO_TRACE)
-            return this.wrappedNode.executeGeneric(frame);
-
         if (frame == null)
             return this.wrappedNode.executeGeneric(frame);
 
