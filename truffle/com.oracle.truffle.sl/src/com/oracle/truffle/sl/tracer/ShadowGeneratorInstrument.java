@@ -11,9 +11,10 @@ public interface ShadowGeneratorInstrument {
      * Any housekeeping before executing the wrapped node can be done here
      *
      * @param frame
+     * @param wrappedNode TODO
      * @param operandStack
      */
-    public void beforeExecuteGeneric(VirtualFrame frame);
+    public void beforeExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode);
 
     /**
      * This is invoked right after excuting the wrapped node for retrieving the shadow tree
@@ -23,6 +24,7 @@ public interface ShadowGeneratorInstrument {
      * @param frame
      * @param wrappedNode
      * @param result
+     * @param shadowTreeCreator TODO
      * @return
      */
     public ShadowTree afterExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode, Object result);

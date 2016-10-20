@@ -1,22 +1,23 @@
 package com.oracle.truffle.sl.tracer;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.call.SLDispatchNode;
-import com.oracle.truffle.sl.nodes.call.SLInvokeNode;
-import com.oracle.truffle.sl.parser.Parser;
 import com.oracle.truffle.sl.parser.SLNodeFactory;
 
 /**
- * We instrument DispatchNode because 1) this is the point where the argument nodes are already
- * evaluated, 2) It is before passing the control to the callee. If we wrap SLInvokeNode, calling
- * its executeGeneric method ends up with executing the body of the callee, so we cannot intercept
- * the invocation and pass the arguments before executing the body of the callee.
+ *
+ * TODO instrument invokeNOde instead of dispatchNode We instrument DispatchNode because 1) this is
+ * the point where the argument nodes are already evaluated, 2) It is before passing the control to
+ * the callee. If we wrap SLInvokeNode, calling its executeGeneric method ends up with executing the
+ * body of the callee, so we cannot intercept the invocation and pass the arguments before executing
+ * the body of the callee.
  *
  */
 public class InvokeWrapperNode extends SLDispatchNode {
@@ -53,10 +54,11 @@ public class InvokeWrapperNode extends SLDispatchNode {
             // available at this point is the frame object itself.
 
             FrameSlot slot = frame.getFrameDescriptor().findOrAddFrameSlot(frame);
+
             frame.setObject(slot, shadowTree);
 
         } catch (FrameSlotTypeException e) {
-            e.printStackTrace();
+            throw new IllegalStateException();
         }
 
         // We do this in the last step when the shadow data is already stored in the caller's frame

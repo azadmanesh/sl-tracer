@@ -46,6 +46,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.runtime.SLContext;
+import com.oracle.truffle.sl.tracer.ShadowTree;
 
 /**
  * Builtin function to write a value to the {@link SLContext#getOutput() standard output}. The
@@ -90,6 +91,22 @@ public abstract class SLPrintlnBuiltin extends SLBuiltinNode {
     @TruffleBoundary
     private static void doPrint(PrintWriter out, String value) {
         out.println(value);
+    }
+
+    @Specialization
+    public String println(ShadowTree value) {
+        // source section can be null, e.g.: formal parameter passing
+        String lineNo = "";
+        if (value.getASTNode().getSourceSection() != null) {
+            lineNo += value.getASTNode().getSourceSection().getStartLine();
+        } else {
+            lineNo += "<UNKNOWN>";
+        }
+
+        String nodeInfo = "Node:\t" + value.getASTNode().getClass().getSimpleName() + ", Line:\t" + lineNo + ", Value:\t" + value.getRootValue();
+
+        doPrint(getContext().getOutput(), nodeInfo);
+        return nodeInfo;
     }
 
     @Specialization

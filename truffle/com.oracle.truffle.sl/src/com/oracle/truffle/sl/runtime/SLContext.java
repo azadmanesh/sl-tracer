@@ -78,6 +78,9 @@ import com.oracle.truffle.sl.builtins.SLStackTraceBuiltinFactory;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.SLRootNode;
 import com.oracle.truffle.sl.nodes.local.SLReadArgumentNode;
+import com.oracle.truffle.sl.tracer.SLOriginCountBuiltinFactory;
+import com.oracle.truffle.sl.tracer.SLStepBuiltin;
+import com.oracle.truffle.sl.tracer.SLStepBuiltinFactory;
 
 /**
  * The run-time state of SL during execution. The context is created by the {@link SLLanguage}. It
@@ -147,6 +150,8 @@ public final class SLContext extends ExecutionContext {
         installBuiltin(SLHasSizeBuiltinFactory.getInstance());
         installBuiltin(SLIsExecutableBuiltinFactory.getInstance());
         installBuiltin(SLIsNullBuiltinFactory.getInstance());
+        installBuiltin(SLStepBuiltinFactory.getInstance());
+        installBuiltin(SLOriginCountBuiltinFactory.getInstance());
     }
 
     public void installBuiltin(NodeFactory<? extends SLBuiltinNode> factory) {

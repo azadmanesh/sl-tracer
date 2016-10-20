@@ -93,6 +93,7 @@ import com.oracle.truffle.sl.tracer.ReadArgumentShadowInstrument;
 import com.oracle.truffle.sl.tracer.ReadLocalShadowInstrument;
 import com.oracle.truffle.sl.tracer.ReadPropertyShadowInstrument;
 import com.oracle.truffle.sl.tracer.ReturnWrapperNode;
+import com.oracle.truffle.sl.tracer.SLTracerNode;
 import com.oracle.truffle.sl.tracer.StackManipulateShadowInstrument;
 import com.oracle.truffle.sl.tracer.WriteLocalShadowInstrument;
 import com.oracle.truffle.sl.tracer.ExpressionWrapperNode;
@@ -122,6 +123,7 @@ public class SLNodeFactory {
         }
     }
 
+    // TODO move to somewhere else
     // The mapping will be to a stack object holding shadow tree root
     public final static Object SHADOW_OPERAND_STACK_KEY = new Object();
 
@@ -164,6 +166,8 @@ public class SLNodeFactory {
         functionName = nameToken.val;
         functionBodyStartPos = bodyStartPos;
         frameDescriptor = new FrameDescriptor();
+
+        // TODO remove this and replace it with findOrAdd
         frameDescriptor.addFrameSlot(SHADOW_LOCAL_KEY);
         frameDescriptor.addFrameSlot(SHADOW_OPERAND_STACK_KEY);
         methodNodes = new ArrayList<>();
@@ -394,8 +398,6 @@ public class SLNodeFactory {
      * @return An SLInvokeNode for the given parameters.
      */
     public SLExpressionNode createCall(SLExpressionNode functionNode, List<SLExpressionNode> parameterNodes, Token finalToken) {
-        System.out.println("function node is " + functionNode);
-        System.out.println("parameter Nodes is " + parameterNodes);
         final SLExpressionNode result = new SLInvokeNode(functionNode, parameterNodes.toArray(new SLExpressionNode[parameterNodes.size()]));
 
         final int startPos = functionNode.getSourceSection().getCharIndex();
@@ -425,6 +427,10 @@ public class SLNodeFactory {
         }
 
         return new ExpressionWrapperNode(result, new WriteLocalShadowInstrument(name));
+    }
+
+    public SLExpressionNode createTracer(SLExpressionNode right) {
+        return new SLTracerNode(right);
     }
 
     /**

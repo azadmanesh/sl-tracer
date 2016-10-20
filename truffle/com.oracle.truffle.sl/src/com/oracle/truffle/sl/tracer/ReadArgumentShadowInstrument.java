@@ -23,7 +23,7 @@ public class ReadArgumentShadowInstrument implements ShadowGeneratorInstrument {
         this.index = index;
     }
 
-    public void beforeExecuteGeneric(VirtualFrame frame) {
+    public void beforeExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode) {
     }
 
     public ShadowTree afterExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode, Object result) {

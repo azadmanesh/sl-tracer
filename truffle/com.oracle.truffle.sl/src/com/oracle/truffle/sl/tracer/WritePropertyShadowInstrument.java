@@ -26,7 +26,7 @@ public class WritePropertyShadowInstrument implements ShadowGeneratorInstrument 
 
     public final static Object SHADOW_PROPERTY_KEY = new Object();
 
-    public void beforeExecuteGeneric(VirtualFrame frame) {
+    public void beforeExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode) {
     }
 
     public ShadowTree afterExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode, Object result) {

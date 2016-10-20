@@ -1,6 +1,7 @@
 package com.oracle.truffle.sl.tracer;
 
 import java.util.Stack;
+import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
 
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -38,6 +39,7 @@ public class ReturnWrapperNode extends SLStatementNode {
 
             try {
                 Stack<ShadowTree> operandStack = (Stack<ShadowTree>) frame.getObject(stackSlot);
+                ShadowTree newShadowTree = null;
 
                 if (e.getResult() != SLNull.SINGLETON) {
 
@@ -45,12 +47,12 @@ public class ReturnWrapperNode extends SLStatementNode {
                         throw new IllegalStateException("Operand stack's size should be at least 1!");
 
                     ShadowTree origin = operandStack.pop();
-                    ShadowTree newShadowTree = new ShadowTree(this.wrappedNode, origin.getRootValue(), new ShadowTree[]{origin});
-                    VirtualFrame callerFrame = (VirtualFrame) Truffle.getRuntime().getCallerFrame().getFrame(FrameAccess.READ_ONLY, true);
-                    FrameSlot callerStackSlot = callerFrame.getFrameDescriptor().findFrameSlot(SLNodeFactory.SHADOW_OPERAND_STACK_KEY);
-                    Stack<ShadowTree> callerStack = (Stack<ShadowTree>) callerFrame.getObject(callerStackSlot);
-                    callerStack.push(newShadowTree);
+                    newShadowTree = new ShadowTree(this.wrappedNode, origin.getRootValue(), new ShadowTree[]{origin});
+                } else {
+                    newShadowTree = new ShadowTree(this.wrappedNode, SLNull.SINGLETON, new ShadowTree[0]);
                 }
+
+                operandStack.push(newShadowTree);
             } catch (FrameSlotTypeException fste) {
                 throw new IllegalStateException(fste);
             }

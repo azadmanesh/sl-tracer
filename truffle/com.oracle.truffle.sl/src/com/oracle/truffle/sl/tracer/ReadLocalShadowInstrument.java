@@ -48,7 +48,7 @@ public class ReadLocalShadowInstrument implements ShadowGeneratorInstrument {
         return newShadowTree;
     }
 
-    public void beforeExecuteGeneric(VirtualFrame frame) {
+    public void beforeExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode) {
     }
 
 }

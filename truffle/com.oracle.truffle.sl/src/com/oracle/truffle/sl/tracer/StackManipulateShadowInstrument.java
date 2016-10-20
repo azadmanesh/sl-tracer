@@ -21,7 +21,7 @@ public class StackManipulateShadowInstrument implements ShadowGeneratorInstrumen
 
     private int stackSizeBefore;
 
-    public void beforeExecuteGeneric(VirtualFrame frame) {
+    public void beforeExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode) {
         FrameSlot stackSlot = frame.getFrameDescriptor().findFrameSlot(SLNodeFactory.SHADOW_OPERAND_STACK_KEY);
         Stack<ShadowTree> stack;
         try {

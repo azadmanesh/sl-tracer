@@ -24,7 +24,7 @@ public class WriteLocalShadowInstrument implements ShadowGeneratorInstrument {
         this.name = name;
     }
 
-    public void beforeExecuteGeneric(VirtualFrame frame) {
+    public void beforeExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode) {
     }
 
     public ShadowTree afterExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode, Object result) {
@@ -51,8 +51,6 @@ public class WriteLocalShadowInstrument implements ShadowGeneratorInstrument {
             }
 
             localOccurrences.add(newShadowTree);
-
-            ShadowTree.dumpTree(newShadowTree);
 
         } catch (FrameSlotTypeException e) {
             throw new IllegalStateException(e);

@@ -14,7 +14,7 @@ import com.oracle.truffle.sl.parser.SLNodeFactory;
  */
 public class LiteralShadowInstrument implements ShadowGeneratorInstrument {
 
-    public void beforeExecuteGeneric(VirtualFrame frame) {
+    public void beforeExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode) {
     }
 
     public ShadowTree afterExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode, Object result) {

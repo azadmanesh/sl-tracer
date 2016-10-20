@@ -356,27 +356,27 @@ public class Scanner {
 		for (int i = 65; i <= 90; ++i) start.set(i, 1);
 		for (int i = 97; i <= 122; ++i) start.set(i, 1);
 		for (int i = 49; i <= 57; ++i) start.set(i, 4);
-		start.set(34, 2); 
-		start.set(48, 5); 
-		start.set(40, 6); 
-		start.set(44, 7); 
-		start.set(41, 8); 
-		start.set(123, 9); 
-		start.set(125, 10); 
-		start.set(59, 11); 
-		start.set(124, 12); 
-		start.set(38, 14); 
-		start.set(60, 28); 
-		start.set(62, 29); 
-		start.set(61, 30); 
-		start.set(33, 19); 
-		start.set(43, 21); 
-		start.set(45, 22); 
-		start.set(42, 23); 
-		start.set(47, 24); 
-		start.set(46, 25); 
-		start.set(91, 26); 
-		start.set(93, 27); 
+		start.set(34, 2);
+		start.set(48, 5);
+		start.set(40, 6);
+		start.set(44, 7);
+		start.set(41, 8);
+		start.set(123, 9);
+		start.set(125, 10);
+		start.set(59, 11);
+		start.set(124, 12);
+		start.set(38, 14);
+		start.set(60, 28);
+		start.set(62, 29);
+		start.set(61, 30);
+		start.set(33, 19);
+		start.set(43, 21);
+		start.set(45, 22);
+		start.set(42, 23);
+		start.set(47, 24);
+		start.set(46, 25);
+		start.set(91, 26);
+		start.set(93, 27);
 		start.set(Buffer.EOF, -1);
 		literals.put("function", new Integer(4));
 		literals.put("break", new Integer(10));
@@ -451,7 +451,7 @@ public class Scanner {
             tval = newBuf;
         }
         if (ch != Buffer.EOF) {
-			tval[tlen++] = (char)ch; 
+			tval[tlen++] = (char)ch;
 
             NextCh();
         }

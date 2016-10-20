@@ -23,7 +23,7 @@ import com.oracle.truffle.sl.parser.SLNodeFactory;
  */
 public class ReadPropertyShadowInstrument implements ShadowGeneratorInstrument {
 
-    public void beforeExecuteGeneric(VirtualFrame frame) {
+    public void beforeExecuteGeneric(VirtualFrame frame, SLExpressionNode wrappedNode) {
     }
 
     @SuppressWarnings("unchecked")
